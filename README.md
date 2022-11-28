@@ -10,7 +10,7 @@ API поддерживает версионирование
 
 python 3.10
 
-FastAPi 0.87
+FastAPI 0.87
 
 Alembic 1.8.1
 
@@ -143,7 +143,7 @@ API supports versioning
 
 python 3.10
 
-FastAPi 0.87
+FastAPI 0.87
 
 Alembic 1.8.1
 
