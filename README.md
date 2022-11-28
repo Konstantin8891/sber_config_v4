@@ -111,3 +111,4 @@ http://localhost:8000/?service=managed-k11s&version=1.0
 
 Удаляет неиспользуемую версию конфигурации
 
+# API for viewing, changing, adding configuration of services
