@@ -40,4 +40,3 @@ def downgrade() -> None:
     op.drop_table('service')
     op.drop_table('serviceversion')
     op.drop_table('servicekey')
-

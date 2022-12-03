@@ -19,16 +19,17 @@ depends_on = None
 def upgrade() -> None:
     op.add_column(
         'serviceversion',
-        sa.Column('service_id', sa.Integer(), nullable=False) 
+        sa.Column('service_id', sa.Integer(), nullable=False)
     )
     op.add_column(
         'servicekey',
-        sa.Column('service_id', sa.Integer(), nullable=False) 
+        sa.Column('service_id', sa.Integer(), nullable=False)
     )
     op.add_column(
         'servicekey',
-        sa.Column('version_id', sa.Integer(), nullable=False) 
+        sa.Column('version_id', sa.Integer(), nullable=False)
     )
+
 
 def downgrade() -> None:
     op.drop_column('serviceversion', 'service_id')

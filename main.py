@@ -48,6 +48,7 @@ def get_versions_response(
         version_counter += 1
     return response_instance
 
+
 @app.post('/create_service', status_code=status.HTTP_201_CREATED)
 async def post_service(
     response: Response, service: CreateService, db: Session = Depends(get_db)
@@ -98,11 +99,11 @@ async def post_service(
         db.commit()
     return 'created'
 
+
 @app.get('/get_all_services')
 async def get_all(db: Session = Depends(get_db)):
     service_counter = 0
     services = db.query(models.Service).all()
-    model = models.Service()
     response = [0] * len(services)
     for service in services:
         response[service_counter] = {}
@@ -113,8 +114,9 @@ async def get_all(db: Session = Depends(get_db)):
         response[service_counter]['versions'] = get_versions_response(
             versions, service, db
         )
-        service_counter +=1
+        service_counter += 1
     return response
+
 
 @app.get('/')
 async def get_current_service(
@@ -156,16 +158,30 @@ async def get_current_service(
         response_instance['keys'] = get_keys_response(keys)
         return response_instance
 
+
 @app.put('/')
-async def put_config(service: str, version: str, is_used: bool, keys: list[Key], response: Response, db: Session = Depends(get_db)):
-    service_instance = db.query(models.Service).filter(models.Service.name == service).first()
+async def put_config(
+    service: str,
+    version: str,
+    is_used: bool,
+    keys: list[Key],
+    response: Response,
+    db: Session = Depends(get_db)
+):
+    service_instance = db.query(models.Service).filter(
+        models.Service.name == service
+    ).first()
     if service_instance is None:
         service_instance = models.Service()
         service_instance.name = service
         db.add(service_instance)
         db.commit()
-    service_instance = db.query(models.Service).filter(models.Service.name == service).first()
-    version_instance = db.query(models.ServiceVersion).filter(models.ServiceVersion.service_id == service_instance.id).filter(models.ServiceVersion.version == version).first()
+    service_instance = db.query(models.Service).filter(
+        models.Service.name == service
+    ).first()
+    version_instance = db.query(models.ServiceVersion).filter(
+        models.ServiceVersion.service_id == service_instance.id
+    ).filter(models.ServiceVersion.version == version).first()
     if version_instance is None:
         version_instance = models.ServiceVersion()
         version_instance.service_id = service_instance.id
@@ -174,19 +190,28 @@ async def put_config(service: str, version: str, is_used: bool, keys: list[Key],
         db.add(version_instance)
         db.commit()
         db.refresh(version_instance)
-    db.query(models.ServiceKey).filter(models.ServiceKey.service_id == service_instance.id).filter(models.ServiceKey.version_id == version_instance.id).delete()
+    db.query(models.ServiceKey).filter(
+        models.ServiceKey.service_id == service_instance.id
+    ).filter(models.ServiceKey.version_id == version_instance.id).delete()
     service_key_instance = [0] * len(keys)
     servicekey_counter = 0
     for key in keys:
         service_key_instance[servicekey_counter] = models.ServiceKey()
-        service_key_instance[servicekey_counter].service_id = service_instance.id
-        service_key_instance[servicekey_counter].version_id = version_instance.id
+        service_key_instance[
+            servicekey_counter
+        ].service_id = service_instance.id
+        service_key_instance[
+            servicekey_counter
+        ].version_id = version_instance.id
         service_key_instance[servicekey_counter].service_key = key.service_key
-        service_key_instance[servicekey_counter].service_value = key.service_value
+        service_key_instance[
+            servicekey_counter
+        ].service_value = key.service_value
         db.add(service_key_instance[servicekey_counter])
         db.commit()
         servicekey_counter += 1
     return 'put'
+
 
 @app.patch('/', status_code=status.HTTP_206_PARTIAL_CONTENT)
 async def patch_config(
@@ -235,8 +260,11 @@ async def patch_config(
                 db.commit()
     return 'patched'
 
+
 @app.delete('/', status_code=status.HTTP_204_NO_CONTENT)
-async def delete_config(service: str, version: str, db: Session = Depends(get_db)):
+async def delete_config(
+    service: str, version: str, db: Session = Depends(get_db)
+):
     service_instance = db.query(models.Service).filter(
         models.Service.name == service
     ).first()
@@ -249,7 +277,7 @@ async def delete_config(service: str, version: str, db: Session = Depends(get_db
         raise HTTPException(
             status_code=400, detail='Version of service not found'
         )
-    if version_instance.is_used == True:
+    if version_instance.is_used:
         raise HTTPException(status_code=400, detail='Config is in use')
     db.query(models.ServiceKey).filter(
         models.ServiceKey.service_id == service_instance.id

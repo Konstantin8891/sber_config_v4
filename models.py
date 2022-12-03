@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 
 from database import Base
 
+
 class Service(Base):
     __tablename__ = 'service'
     id = Column(Integer, primary_key=True, index=True)
@@ -19,9 +20,11 @@ class ServiceVersion(Base):
     service_id = Column(Integer, ForeignKey('service.id'))
     version = Column(String)
     is_used = Column(Boolean)
-    
+
     service_v = relationship('Service', back_populates='serviceversion')
-    servicekeyversion = relationship('ServiceKey', back_populates='serviceversion')
+    servicekeyversion = relationship(
+        'ServiceKey', back_populates='serviceversion'
+    )
 
 
 class ServiceKey(Base):
@@ -34,4 +37,6 @@ class ServiceKey(Base):
     service_value = Column(String)
 
     service = relationship('Service', back_populates='servicekey')
-    serviceversion = relationship('ServiceVersion', back_populates='servicekeyversion')
+    serviceversion = relationship(
+        'ServiceVersion', back_populates='servicekeyversion'
+    )
