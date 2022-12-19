@@ -1,6 +1,7 @@
 import json
 
 from fastapi import Depends
+from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 import sys
@@ -12,7 +13,7 @@ from models import Service, ServiceKey, ServiceVersion
 from schemas import CreateService, Key
 
 
-def test_create_service(client):
+def test_create_service(client: TestClient):
     key = Key(service_key='testkey1', service_value='testvalue1')
     service = CreateService(
         name="testname1",
@@ -31,7 +32,7 @@ def test_create_service(client):
     ).status_code == 200
 
 
-def test_put_config(client):
+def test_put_config(client: TestClient):
     key = Key(service_key='testkey1', service_value='testvalue1')
     params = CreateService(
         name='testname2',
@@ -46,13 +47,14 @@ def test_put_config(client):
     ).status_code == 200
 
 
-def test_get_current_service(client):
+def test_get_current_service(client: TestClient):
+
     assert client.get(
         '/?service=testname2&version=testversion2'
     ).status_code == 200
 
 
-def test_delete_service(client):
+def test_delete_service(client: TestClient):
     response = client.delete('/', params={
         "service": "testname2", "version": "testversion2"
     })
@@ -62,6 +64,6 @@ def test_delete_service(client):
     ).status_code == 404
 
 
-def test_get_all(client):
+def test_get_all(client: TestClient):
     response = client.get('/get_all_services')
     assert response.status_code == 200
