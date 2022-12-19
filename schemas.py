@@ -1,3 +1,5 @@
+from typing import List
+
 from pydantic import BaseModel
 
 
@@ -10,7 +12,7 @@ class CreateService(BaseModel):
     name: str
     version: str
     is_used: bool
-    keys: list[Key]
+    keys: List[Key]
 
     class Config:
         orm_mode = True

@@ -4,11 +4,6 @@ version: '3.8'
 services:
   web:
     build: .
-    # command: bash -c 'alembic upgrade head'
-    # command: bash -c 'alembic upgrade c75a996fcfd6'
-    # command: bash -c 'alembic upgrade 506dd116adff'
-    # command: bash -c 'alembic upgrade b480eb1b798c'
-    # command: bash -c 'while !</dev/tcp/db/5432; do sleep 1; done; uvicorn main:app --host 0.0.0.0'
     command: bash -c 'alembic upgrade head & while !</dev/tcp/db/5432; do sleep 1; done; uvicorn main:app --host 0.0.0.0'
     volumes:
       - .:/app
@@ -16,6 +11,8 @@ services:
       - 8000:8000
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
+      - PYTHONUNBUFFERED=1
+
     depends_on:
       - db
     networks:

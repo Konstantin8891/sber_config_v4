@@ -33,14 +33,33 @@ def test_create_service(client):
 
 def test_put_config(client):
     key = Key(service_key='testkey1', service_value='testvalue1')
-    response = client.put('/', params={
-        "service": "testname1",
-        "version": "testversion1",
-        "is_used": True,
-        "keys": [key, ]
-    })
-
+    params = CreateService(
+        name='testname2',
+        version='testversion2',
+        is_used=True,
+        keys=[key]
+    )
+    response = client.put('/', content=params.json())
     assert response.status_code == 200
+    assert client.get(
+        '/?service=testname2&version=testversion2'
+    ).status_code == 200
+
+
+def test_get_current_service(client):
+    assert client.get(
+        '/?service=testname2&version=testversion2'
+    ).status_code == 200
+
+
+def test_delete_service(client):
+    response = client.delete('/', params={
+        "service": "testname2", "version": "testversion2"
+    })
+    assert response.status_code == 204
+    assert client.get(
+        '/?service=testname2&version=testversion2'
+    ).status_code == 404
 
 
 def test_get_all(client):
