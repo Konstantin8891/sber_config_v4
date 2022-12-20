@@ -63,7 +63,7 @@ http://localhost:8000/get_all_services
 
   {
   
-    "service": "testservise1",
+    "service": "testservice1",
     
     "versions": [
     
@@ -99,33 +99,66 @@ http://localhost:8000/?service=name_of_service&version=version
 
 Выводит все ключи и значения версии сервиса, либо если версия не указана, то информацию обо всех версиях сервиса
 
+{
+
+  "service": "string",
+  
+  "version": "string",
+  
+  "keys": {
+  
+    "key1": "value2"
+    
+  }
+  
+}
+
 PUT
 
-curl -X 'PUT' \
-  'http://localhost:8000/?service=managed-k11s&version=1.0&is_used=true' \
-  -H 'accept: application/json' \
-  -H 'Content-Type: application/json' \
-  -d '[
-  {
-    "service_key": "key1",
-    "service_value": "value1"
-  }
-]'
+http://localhost:8000/
+
+{
+
+  "name": "string",
+  
+  "version": "string",
+  
+  "is_used": true,
+  
+  "keys": [
+  
+    {
+    
+      "service_key": "string",
+      
+      "service_value": "string"
+      
+    }
+    
+  ]
+  
+}
 
 Создаёт или редактирует версию сервиса
 
 PATCH
 
-curl -X 'PATCH' \
-  'http://localhost:8000/?service=managed-k11s&version=1.0&is_used=true' \
-  -H 'accept: application/json' \
-  -H 'Content-Type: application/json' \
-  -d '[
-  {
-    "service_key": "string",
-    "service_value": "string"
-  }
-]'
+http://localhost:8000/
+
+{
+
+  "name": "string",
+  
+  "version": "string",
+  
+  "keys": [{
+  
+     "service_key": "key1",
+     
+     "service_value": "value2"
+     
+  }]
+}
 
 Редактирует версию конфигурации
 
@@ -197,7 +230,7 @@ Get all information about all services
 
   {
   
-    "service": "testservise1",
+    "service": "testservice1",
     
     "versions": [
     
@@ -231,35 +264,68 @@ GET
 
 http://localhost:8000/?service=name_of_service&version=version
 
-Выводит все ключи и значения версии сервиса, либо если версия не указана, то информацию обо всех версиях сервиса
+Returns all keys and values of version of service or of all versions of service
+
+{
+
+  "service": "string",
+  
+  "version": "string",
+  
+  "keys": {
+  
+    "key1": "value2"
+    
+  }
+  
+}
 
 PUT
 
-curl -X 'PUT' \
-  'http://localhost:8000/?service=managed-k11s&version=1.0&is_used=true' \
-  -H 'accept: application/json' \
-  -H 'Content-Type: application/json' \
-  -d '[
-  {
-    "service_key": "key1",
-    "service_value": "value1"
-  }
-]'
+http://localhost:8000/
+
+{
+
+  "name": "string",
+  
+  "version": "string",
+  
+  "is_used": true,
+  
+  "keys": [
+  
+    {
+    
+      "service_key": "string",
+      
+      "service_value": "string"
+      
+    }
+    
+  ]
+  
+}
 
 Create or edit version of configuration
 
 PATCH
 
-curl -X 'PATCH' \
-  'http://localhost:8000/?service=managed-k11s&version=1.0&is_used=true' \
-  -H 'accept: application/json' \
-  -H 'Content-Type: application/json' \
-  -d '[
-  {
-    "service_key": "string",
-    "service_value": "string"
-  }
-]'
+http://localhost:8000/
+
+{
+
+  "name": "string",
+  
+  "version": "string",
+  
+  "keys": [{
+  
+     "service_key": "key1",
+     
+     "service_value": "value2"
+     
+  }]
+}
 
 Edit version of configuration
 
