@@ -158,6 +158,7 @@ http://localhost:8000/
      "service_value": "value2"
      
   }]
+  
 }
 
 Редактирует версию конфигурации
@@ -325,6 +326,7 @@ http://localhost:8000/
      "service_value": "value2"
      
   }]
+  
 }
 
 Edit version of configuration
