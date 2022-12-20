@@ -1,14 +1,12 @@
-import logging
-
 from typing import Optional
 
-from fastapi import FastAPI, Depends, HTTPException, status, Response
+from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 import models
 
 from database import SessionLocal
-from schemas import CreateService, Key
+from schemas import Service, PatchService
 
 app = FastAPI()
 
@@ -54,7 +52,7 @@ def get_versions_response(
 
 @app.post('/create_service', status_code=status.HTTP_201_CREATED)
 async def post_service(
-    service: CreateService, db: Session = Depends(get_db)
+    service: Service, db: Session = Depends(get_db)
 ):
     service_model = models.Service()
     service_name = service.name
@@ -152,6 +150,7 @@ async def get_current_service(
             )
         response_instance['service'] = service
         response_instance['version'] = version
+        response_instance['is_used'] = service_version.is_used
         keys = db.query(models.ServiceKey).filter(
             models.ServiceKey.service_id == service_instance.id
         ).filter(models.ServiceKey.version_id == service_version.id)
@@ -161,7 +160,7 @@ async def get_current_service(
 
 @app.put('/')
 async def put_config(
-    create_service: CreateService,
+    create_service: Service,
     db: Session = Depends(get_db)
 ):
     service_instance = db.query(models.Service).filter(
@@ -209,50 +208,56 @@ async def put_config(
     return 'put'
 
 
-# @app.patch('/', status_code=status.HTTP_206_PARTIAL_CONTENT)
-# async def patch_config(
-#     service: ,
-#     db: Session = Depends(get_db)
-# ):
-#     service_instance = db.query(models.Service).filter(
-#         models.Service.name == service
-#     ).first()
-#     if service_instance is None:
-#         raise HTTPException(status_code=400, detail='Service not found')
-#     version_instance = db.query(models.ServiceVersion).filter(
-#         models.ServiceVersion.service_id == service_instance.id
-#     ).filter(models.ServiceVersion.version == version).first()
-#     if version_instance is None:
-#         raise HTTPException(
-#             status_code=400, detail='Version of service not found'
-#         )
-#     if is_used is not None:
-#         if version_instance.is_used != is_used:
-#             version_instance.is_used = is_used
-#             db.commit()
-#     if keys is not None:
-#         for key in keys:
-#             servicekey_instance = db.query(models.ServiceKey).filter(
-#                 models.ServiceKey.service_id == service_instance.id
-#             ).filter(
-#                 models.ServiceKey.version_id == version_instance.id
-#             ).filter(models.ServiceKey.service_key == key.service_key).first()
-#             if servicekey_instance is None:
-#                 servicekey_model = models.ServiceKey()
-#                 servicekey_model.service_id = service_instance.id
-#                 servicekey_model.version_id = version_instance.id
-#                 servicekey_model.service_key = key.service_key
-#                 servicekey_model.service_value = key.service_value
-#                 db.add(servicekey_model)
-#                 db.commit()
-#             else:
-#                 if servicekey_instance.service_value != key.service_value:
-#                     servicekey_instance.service_id = service_instance.id
-#                     servicekey_instance.version_id = version_instance.id
-#                     servicekey_instance.service_key = key.service_key
-#                     servicekey_instance.service_value = key.service_value
-#                     db.commit()
-#     return 'patched'
+@app.patch('/', status_code=status.HTTP_206_PARTIAL_CONTENT)
+async def patch_config(
+    service: PatchService,
+    db: Session = Depends(get_db)
+):
+    flag = False
+    service_instance = db.query(models.Service).filter(
+        models.Service.name == service.name
+    ).first()
+    if service_instance is None:
+        raise HTTPException(status_code=400, detail='Service not found')
+    version_instance = db.query(models.ServiceVersion).filter(
+        models.ServiceVersion.service_id == service_instance.id
+    ).filter(models.ServiceVersion.version == service.version).first()
+    if version_instance is None:
+        raise HTTPException(
+            status_code=400, detail='Version of service not found'
+        )
+    if service.is_used is not None:
+        if version_instance.is_used != service.is_used:
+            version_instance.is_used = service.is_used
+            db.commit()
+            flag = True
+    if service.keys is not None:
+        for key in service.keys:
+            servicekey_instance = db.query(models.ServiceKey).filter(
+                models.ServiceKey.service_id == service_instance.id
+            ).filter(
+                models.ServiceKey.version_id == version_instance.id
+            ).filter(models.ServiceKey.service_key == key.service_key).first()
+            if servicekey_instance is None:
+                servicekey_model = models.ServiceKey()
+                servicekey_model.service_id = service_instance.id
+                servicekey_model.version_id = version_instance.id
+                servicekey_model.service_key = key.service_key
+                servicekey_model.service_value = key.service_value
+                db.add(servicekey_model)
+                db.commit()
+                flag = True
+            else:
+                if servicekey_instance.service_value != key.service_value:
+                    servicekey_instance.service_id = service_instance.id
+                    servicekey_instance.version_id = version_instance.id
+                    servicekey_instance.service_key = key.service_key
+                    servicekey_instance.service_value = key.service_value
+                    db.commit()
+                    flag = True
+    if flag:
+        return 'patched'
+    raise HTTPException(status_code=400, detail='No changes were found')
 
 
 @app.delete('/', status_code=status.HTTP_204_NO_CONTENT)
