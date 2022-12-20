@@ -95,3 +95,5 @@ test_routes/
 
 test_db.db
 
+*.pyc
+

@@ -1,7 +1,7 @@
 """Create databases
 
 Revision ID: ad9625042e0a
-Revises: 
+Revises:
 Create Date: 2022-11-17 16:47:10.130396
 
 """
