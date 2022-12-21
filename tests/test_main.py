@@ -1,6 +1,8 @@
 import os
 import sys
 
+from typing import Generator, Any
+
 import pytest
 
 from fastapi.testclient import TestClient
@@ -24,16 +26,17 @@ SessionTesting = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 @pytest.fixture(name="session")
-def session_fixture():
+def session_fixture() -> Generator[SessionTesting, None, None]:
     Base.metadata.create_all(engine)
-    with SessionTesting(bind=engine.connect()) as db_session:
-        yield db_session
+    with SessionTesting(bind=engine.connect()) as session:
+        yield session
+    Base.metadata.drop_all(engine)
 
 
 @pytest.fixture(name="client")
-def client_fixture(db_session: SessionTesting):
+def client_fixture(session: SessionTesting) -> None:
     def get_db_override():
-        return db_session
+        return session
     app.dependency_overrides[get_db] = get_db_override
     client = TestClient(app)
     yield client
@@ -41,31 +44,31 @@ def client_fixture(db_session: SessionTesting):
 
 
 def create_service(
-    service_name: str, is_used: bool, db_session: SessionTesting
-):
+    service_name: str, is_used: bool, session: SessionTesting
+) -> None:
     service_model = models.Service(name=service_name)
-    db_session.add(service_model)
-    db_session.commit()
-    db_session.refresh(service_model)
+    session.add(service_model)
+    session.commit()
+    session.refresh(service_model)
     service_version_model = models.ServiceVersion(
         service_id=service_model.id,
         version='testversion2',
         is_used=is_used
     )
-    db_session.add(service_version_model)
-    db_session.commit()
-    db_session.refresh(service_version_model)
+    session.add(service_version_model)
+    session.commit()
+    session.refresh(service_version_model)
     service_key_model = models.ServiceKey(
         service_id=service_model.id,
         version_id=service_version_model.id,
         service_key='key1',
         service_value='value1'
     )
-    db_session.add(service_key_model)
-    db_session.commit()
+    session.add(service_key_model)
+    session.commit()
 
 
-def test_create_service(client: TestClient):
+def test_create_service(client: TestClient) -> None:
     key = Key(service_key='testkey1', service_value='testvalue1')
     service = Service(
         name="testname1",
@@ -80,7 +83,7 @@ def test_create_service(client: TestClient):
     ).status_code == 200
 
 
-def test_put_config(client: TestClient):
+def test_put_config(client: TestClient) -> None:
     key = Key(service_key='testkey1', service_value='testvalue1')
     params = Service(
         name='testname2',
@@ -95,61 +98,63 @@ def test_put_config(client: TestClient):
     ).status_code == 200
 
 
-def test_get_current_service(db_session: SessionTesting, client: TestClient):
-    service_name = 'testservice2'
+def test_get_current_service(
+    session: SessionTesting, client: TestClient
+) -> None:
+    service_name = 'testservice6'
     is_used = True
-    create_service(service_name, is_used, db_session)
+    create_service(service_name, is_used, session)
     assert client.get(
-        '/?service=testservice2&version=testversion2'
+        '/?service=testservice6&version=testversion2'
     ).status_code == 200
 
 
-def test_delete_service(db_session: SessionTesting, client: TestClient):
+def test_delete_service(session: SessionTesting, client: TestClient) -> None:
     is_used = False
-    service_name = 'testservice2'
-    create_service(service_name, is_used, db_session)
+    service_name = 'testservice3'
+    create_service(service_name, is_used, session)
     response = client.delete(
-        '/?service=testservice2&version=testversion2'
+        '/?service=testservice3&version=testversion2'
     )
     assert response.status_code == 204
     assert client.get(
-        '/?service=testservice2&version=testversion2'
+        '/?service=testservice3&version=testversion2'
     ).status_code == 400
     is_used = True
-    service_name = 'testservice3'
-    create_service(service_name, is_used, db_session)
+    service_name = 'testservice4'
+    create_service(service_name, is_used, session)
     response = client.delete(
-        '/?service=testservice2&version=testversion2'
+        '/?service=testservice4&version=testversion2'
     )
     assert response.status_code == 400
     assert client.get(
-        '/?service=testservice3&version=testversion2'
+        '/?service=testservice4&version=testversion2'
     ).status_code == 200
 
 
-def test_patch_config(db_session: SessionTesting, client: TestClient):
+def test_patch_config(session: SessionTesting, client: TestClient) -> None:
     is_used = False
-    service_name = 'testservice2'
-    create_service(service_name, is_used, db_session)
+    service_name = 'testservice5'
+    create_service(service_name, is_used, session)
     service = PatchService(
-        name='testservice2',
+        name='testservice5',
         version='testversion2',
         is_used=True
     )
     response = client.patch('/', content=service.json())
     assert response.status_code == 206
     assert client.get(
-        '/?service=testservice2&version=testversion2'
+        '/?service=testservice5&version=testversion2'
     ).json().get('is_used') is True
     service = PatchService(
-        name='testservice2',
+        name='testservice5',
         version='testversion2',
         keys=[{'service_key': 'key1', 'service_value': 'value2'}]
     )
     response = client.patch('/', content=service.json())
     assert response.status_code == 206
     assert client.get(
-        '/?service=testservice2&version=testversion2'
+        '/?service=testservice5&version=testversion2'
     ).json().get('keys') == {'key1': 'value2'}
 
 

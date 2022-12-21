@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Generator, Union
 
 from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -11,7 +11,7 @@ from schemas import Service, PatchService
 app = FastAPI()
 
 
-def get_db():
+def get_db() -> Generator[SessionLocal, None, None]:
     try:
         db = SessionLocal()
         yield db
@@ -19,9 +19,8 @@ def get_db():
         db.close()
 
 
-def get_keys_response(keys: models.ServiceKey):
+def get_keys_response(keys: models.ServiceKey) -> dict:
     response = {}
-    print(keys)
     for key in keys:
         response[key.service_key] = key.service_value
     return response
@@ -31,7 +30,7 @@ def get_versions_response(
     versions: models.ServiceVersion,
     service_instance: models.Service,
     db: Session = Depends(get_db)
-):
+) -> dict:
     response_instance = [0] * versions.count()
     version_counter = 0
     for version in versions:
@@ -53,7 +52,7 @@ def get_versions_response(
 @app.post('/create_service', status_code=status.HTTP_201_CREATED)
 async def post_service(
     service: Service, db: Session = Depends(get_db)
-):
+) -> Union[str, Exception]:
     service_model = models.Service()
     service_name = service.name
     service_instance = db.query(models.Service).filter(
@@ -100,7 +99,7 @@ async def post_service(
 
 
 @app.get('/get_all_services')
-async def get_all(db: Session = Depends(get_db)):
+async def get_all(db: Session = Depends(get_db)) -> list:
     service_counter = 0
     services = db.query(models.Service).all()
     response = [0] * len(services)
@@ -122,7 +121,7 @@ async def get_current_service(
     service: str,
     db: Session = Depends(get_db),
     version: Optional[str] = None
-):
+) -> Union[dict, Exception]:
     service_instance = db.query(models.Service).filter(
         models.Service.name == service
     ).first()
@@ -162,7 +161,7 @@ async def get_current_service(
 async def put_config(
     create_service: Service,
     db: Session = Depends(get_db)
-):
+) -> Union[str, Exception]:
     service_instance = db.query(models.Service).filter(
         models.Service.name == create_service.name
     ).first()
@@ -212,7 +211,7 @@ async def put_config(
 async def patch_config(
     service: PatchService,
     db: Session = Depends(get_db)
-):
+) -> Union[str, Exception]:
     flag = False
     service_instance = db.query(models.Service).filter(
         models.Service.name == service.name
@@ -263,7 +262,7 @@ async def patch_config(
 @app.delete('/', status_code=status.HTTP_204_NO_CONTENT)
 async def delete_config(
     service: str, version: str, db: Session = Depends(get_db)
-):
+) -> Union[str, Exception]:
     service_instance = db.query(models.Service).filter(
         models.Service.name == service
     ).first()
