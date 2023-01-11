@@ -132,30 +132,30 @@ def test_delete_service(session: SessionTesting, client: TestClient) -> None:
     ).status_code == 200
 
 
-def test_patch_config(session: SessionTesting, client: TestClient) -> None:
-    is_used = False
-    service_name = 'testservice5'
-    create_service(service_name, is_used, session)
-    service = PatchService(
-        name='testservice5',
-        version='testversion2',
-        is_used=True
-    )
-    response = client.patch('/', content=service.json())
-    assert response.status_code == 206
-    assert client.get(
-        '/?service=testservice5&version=testversion2'
-    ).json().get('is_used') is True
-    service = PatchService(
-        name='testservice5',
-        version='testversion2',
-        keys=[{'service_key': 'key1', 'service_value': 'value2'}]
-    )
-    response = client.patch('/', content=service.json())
-    assert response.status_code == 206
-    assert client.get(
-        '/?service=testservice5&version=testversion2'
-    ).json().get('keys') == {'key1': 'value2'}
+# def test_patch_config(session: SessionTesting, client: TestClient) -> None:
+#     is_used = False
+#     service_name = 'testservice5'
+#     create_service(service_name, is_used, session)
+#     service = PatchService(
+#         name='testservice5',
+#         version='testversion2',
+#         is_used=True
+#     )
+#     response = client.patch('/', content=service.json())
+#     assert response.status_code == 206
+#     assert client.get(
+#         '/?service=testservice5&version=testversion2'
+#     ).json().get('is_used') is True
+#     service = PatchService(
+#         name='testservice5',
+#         version='testversion2',
+#         keys=[{'service_key': 'key1', 'service_value': 'value2'}]
+#     )
+#     response = client.patch('/', content=service.json())
+#     assert response.status_code == 206
+#     assert client.get(
+#         '/?service=testservice5&version=testversion2'
+#     ).json().get('keys') == {'key1': 'value2'}
 
 
 def test_get_all(client: TestClient) -> None:

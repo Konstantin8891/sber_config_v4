@@ -9,8 +9,11 @@ class Service(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True)
 
-    serviceversion = relationship("ServiceVersion", back_populates='service_v')
-    servicekey = relationship('ServiceKey', back_populates='service')
+    serviceversion = relationship(
+        'ServiceVersion',
+        back_populates='service',
+        cascade='all, delete-orphan'
+    )
 
 
 class ServiceVersion(Base):
@@ -21,9 +24,11 @@ class ServiceVersion(Base):
     version = Column(String)
     is_used = Column(Boolean)
 
-    service_v = relationship('Service', back_populates='serviceversion')
-    servicekeyversion = relationship(
-        'ServiceKey', back_populates='serviceversion'
+    service = relationship('Service', back_populates='serviceversion')
+    servicekeys = relationship(
+        'ServiceKey',
+        back_populates='serviceversion',
+        cascade='all, delete-orphan'
     )
 
 
@@ -31,12 +36,11 @@ class ServiceKey(Base):
     __tablename__ = 'servicekey'
 
     id = Column(Integer, primary_key=True, index=True)
-    service_id = Column(Integer, ForeignKey('service.id'))
+    # service_id = Column(Integer, ForeignKey('service.id'))
     version_id = Column(Integer, ForeignKey('serviceversion.id'))
     service_key = Column(String)
     service_value = Column(String)
 
-    service = relationship('Service', back_populates='servicekey')
     serviceversion = relationship(
-        'ServiceVersion', back_populates='servicekeyversion'
+        'ServiceVersion', back_populates='servicekeys', passive_deletes=True
     )
