@@ -163,42 +163,45 @@ async def get_current_service(
         return response_instance
 
 
-@router.put(
-    '/',
-    responses={
-        status.HTTP_200_OK: {'response': 'OK'},
-        status.HTTP_201_CREATED: {'response': 'Created'}
-    }
-)
+# @router.put(
+#     '/',
+#     responses={
+#         status.HTTP_200_OK: {'response': 'OK'},
+#         status.HTTP_201_CREATED: {'response': 'Created'}
+#     }
+# )
+@router.put('/')
 async def put_config(
     create_service: ServiceSchema,
     db: Session = Depends(get_db)
 ) -> Union[str, Exception]:
-    flag_created = False
+    # flag_created = False
     service_instance = db.query(models.Service).filter(
         models.Service.name == create_service.name
     ).first()
     if service_instance is None:
-        service_instance = models.Service()
-        service_instance.name = create_service.name
-        db.add(service_instance)
-        db.commit()
-        flag_created = True
-    service_instance = db.query(models.Service).filter(
-        models.Service.name == create_service.name
-    ).first()
+        raise HTTPException(status_code=400, detail='service does not exist')
+        # service_instance = models.Service()
+        # service_instance.name = create_service.name
+        # db.add(service_instance)
+        # db.commit()
+        # flag_created = True
+    # service_instance = db.query(models.Service).filter(
+    #     models.Service.name == create_service.name
+    # ).first()
     version_instance = db.query(models.ServiceVersion).filter(
         models.ServiceVersion.service_id == service_instance.id
     ).filter(models.ServiceVersion.version == create_service.version).first()
     if version_instance is None:
-        version_instance = models.ServiceVersion()
-        version_instance.service_id = service_instance.id
-        version_instance.version = create_service.version
+        raise HTTPException(status_code=400, detail='version does not exist')
+    # version_instance = models.ServiceVersion()
+    # version_instance.service_id = service_instance.id
+    # version_instance.version = create_service.version
+    if version_instance.is_used != create_service.is_used:
         version_instance.is_used = create_service.is_used
-        db.add(version_instance)
         db.commit()
         db.refresh(version_instance)
-        flag_created = True
+    # flag_created = True
     db.query(models.ServiceKey).filter(
         models.ServiceKey.version_id == version_instance.id
     ).delete()
@@ -221,13 +224,11 @@ async def put_config(
     response_instance['versions'] = get_version_response(
         version_instance, db
     )
-    if flag_created:
-        return JSONResponse(
-            status_code=status.HTTP_201_CREATED, content=response_instance
-        )
-    return JSONResponse(
-        status_code=status.HTTP_200_OK, content=response_instance
-    )
+    # if flag_created:
+    #     return JSONResponse(
+    #         status_code=status.HTTP_201_CREATED, content=response_instance
+    #     )
+    return response_instance
 
 
 @router.delete('/', status_code=status.HTTP_204_NO_CONTENT)

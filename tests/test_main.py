@@ -1,7 +1,7 @@
 import os
 import sys
 
-from typing import Generator, Any
+from typing import Generator
 
 import pytest
 
@@ -13,9 +13,10 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import models
 
-from main import get_db, app
+from main import app
 from database import Base
-from schemas import Service, Key, PatchService
+from routers.routers import get_db
+from schemas import ServiceSchema, KeySchema
 
 
 engine = create_engine(
@@ -59,7 +60,6 @@ def create_service(
     session.commit()
     session.refresh(service_version_model)
     service_key_model = models.ServiceKey(
-        service_id=service_model.id,
         version_id=service_version_model.id,
         service_key='key1',
         service_value='value1'
@@ -69,8 +69,8 @@ def create_service(
 
 
 def test_create_service(client: TestClient) -> None:
-    key = Key(service_key='testkey1', service_value='testvalue1')
-    service = Service(
+    key = KeySchema(service_key='testkey1', service_value='testvalue1')
+    service = ServiceSchema(
         name="testname1",
         version="testversion1",
         is_used=True,
@@ -83,18 +83,21 @@ def test_create_service(client: TestClient) -> None:
     ).status_code == 200
 
 
-def test_put_config(client: TestClient) -> None:
-    key = Key(service_key='testkey1', service_value='testvalue1')
-    params = Service(
-        name='testname2',
+def test_put_config(client: TestClient, session: SessionTesting) -> None:
+    key = KeySchema(service_key='testkey1', service_value='testvalue1')
+    service_name = 'testname1'
+    is_used = True
+    create_service(service_name, is_used, session)
+    params = ServiceSchema(
+        name='testname1',
         version='testversion2',
-        is_used=True,
+        is_used=False,
         keys=[key]
     )
     response = client.put('/', content=params.json())
     assert response.status_code == 200
     assert client.get(
-        '/?service=testname2&version=testversion2'
+        '/?service=testname1&version=testversion2'
     ).status_code == 200
 
 
