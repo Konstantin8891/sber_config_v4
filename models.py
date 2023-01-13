@@ -36,7 +36,6 @@ class ServiceKey(Base):
     __tablename__ = 'servicekey'
 
     id = Column(Integer, primary_key=True, index=True)
-    # service_id = Column(Integer, ForeignKey('service.id'))
     version_id = Column(Integer, ForeignKey('serviceversion.id'))
     service_key = Column(String)
     service_value = Column(String)
