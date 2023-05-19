@@ -22,7 +22,9 @@ Pytest 7.2.0
 
 git clone git@github.com:Konstantin8891/sber_config_v4.git
 
-docker-compose up --build
+docker-compose up --build -d
+
+docker-compose exec web alembic upgrade head
 
 ## Примеры запросов
 
