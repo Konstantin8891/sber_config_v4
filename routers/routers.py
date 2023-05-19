@@ -20,14 +20,14 @@ def get_db() -> Generator[SessionLocal, None, None]:
         db.close()
 
 
-def get_keys_response(keys: models.ServiceKey) -> dict:
+async def get_keys_response(keys: models.ServiceKey) -> dict:
     response = {}
     for key in keys:
         response[key.service_key] = key.service_value
     return response
 
 
-def get_versions_response(
+async def get_versions_response(
     versions: models.ServiceVersion,
     db: Session = Depends(get_db)
 ) -> dict:
@@ -44,12 +44,12 @@ def get_versions_response(
         keys = db.query(models.ServiceKey).filter(
             models.ServiceKey.version_id == version.id
         )
-        response_instance[version_counter]['keys'] = get_keys_response(keys)
+        response_instance[version_counter]['keys'] = await get_keys_response(keys)
         version_counter += 1
     return response_instance
 
 
-def get_version_response(
+async def get_version_response(
     version: models.ServiceVersion,
     db: Session = Depends(get_db)
 ):
@@ -60,11 +60,11 @@ def get_version_response(
     keys = db.query(models.ServiceKey).filter(
         models.ServiceKey.version_id == version.id
     )
-    response_instance[0]['keys'] = get_keys_response(keys)
+    response_instance[0]['keys'] = await get_keys_response(keys)
     return response_instance
 
 
-def get_service(
+async def get_service(
     service_name: str, db: Session = Depends(get_db)
 ) -> Union[models.Service, None]:
     return db.query(models.Service).filter(
@@ -72,7 +72,7 @@ def get_service(
     ).first()
 
 
-def get_service_version(
+async def get_service_version(
     service_version: str, service_id: int, db: Session = Depends(get_db)
 ) -> Union[models.ServiceVersion, None]:
     return db.query(models.ServiceVersion).filter(
@@ -84,7 +84,7 @@ def get_service_version(
 async def post_service(
     service: ServiceSchema, db: Session = Depends(get_db)
 ) -> Union[str, Exception]:
-    service_instance = get_service(service.name, db)
+    service_instance = await get_service(service.name, db)
     if service_instance is None:
         service_instance = models.Service(name=service.name)
         db.add(service_instance)
@@ -114,7 +114,7 @@ async def post_service(
         db.commit()
     response = {}
     response['service'] = service.name
-    response['versions'] = get_version_response(serviceversion_model, db)
+    response['versions'] = await get_version_response(serviceversion_model, db)
     return response
 
 
@@ -132,8 +132,8 @@ async def get_current_service(
     service: str,
     db: Session = Depends(get_db),
     version: Optional[str] = None
-) -> Union[dict, Exception]:
-    service_instance = get_service(service, db)
+) -> dict:
+    service_instance = await get_service(service, db)
     if service_instance is None:
         raise HTTPException(status_code=400, detail='Service does not exist')
     response_instance = {}
@@ -142,18 +142,18 @@ async def get_current_service(
             models.ServiceVersion.service_id == service_instance.id
         )
         response_instance['service'] = service_instance.name
-        response_instance['versions'] = get_versions_response(
+        response_instance['versions'] = await get_versions_response(
             versions, db
         )
         return response_instance
     else:
-        service_version = get_service_version(version, service_instance.id, db)
+        service_version = await get_service_version(version, service_instance.id, db)
         if service_version is None:
             raise HTTPException(
                 status_code=400, detail='version does not exist'
             )
         response_instance['service'] = service
-        response_instance['versions'] = get_version_response(
+        response_instance['versions'] = await get_version_response(
             service_version, db
         )
         return response_instance
@@ -170,11 +170,11 @@ async def get_current_service(
 async def put_config(
     create_service: ServiceSchema,
     db: Session = Depends(get_db)
-) -> Union[str, Exception]:
-    service_instance = get_service(create_service.name, db)
+) -> str:
+    service_instance = await get_service(create_service.name, db)
     if service_instance is None:
         raise HTTPException(status_code=400, detail='service does not exist')
-    version_instance = get_service_version(
+    version_instance = await get_service_version(
         create_service.version, service_instance.id, db
     )
     if version_instance is None:
@@ -202,7 +202,7 @@ async def put_config(
         servicekey_counter += 1
     response_instance = {}
     response_instance['service'] = create_service.name
-    response_instance['versions'] = get_version_response(
+    response_instance['versions'] = await get_version_response(
         version_instance, db
     )
     return response_instance
@@ -211,7 +211,7 @@ async def put_config(
 @router.delete('/', status_code=status.HTTP_204_NO_CONTENT)
 async def delete_config(
     service: str, version: str, db: Session = Depends(get_db)
-) -> Union[str, Exception]:
+) -> str:
     service_instance = db.query(models.Service).filter(
         models.Service.name == service
     ).first()
@@ -226,6 +226,9 @@ async def delete_config(
         )
     if version_instance.is_used:
         raise HTTPException(status_code=400, detail='Config is in use')
+    db.query(models.ServiceKey).filter(
+        models.ServiceKey.version_id == version_instance.id
+    ).delete()
     db.query(models.ServiceVersion).filter(
         models.ServiceVersion.version == version
     ).delete()
